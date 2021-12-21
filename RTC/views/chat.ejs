@@ -1,0 +1,161 @@
+<%- include('./includes/header.ejs'); %>
+<%- include('./includes/navbar.ejs'); %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+
+<!-- POPUP CSS-->
+<style>
+    .view_detail_popup{
+        position:fixed;
+        width:100%;
+        height:100%;
+        z-index:999999;
+        top:0;
+    }
+    .popup_detail{
+        position: relative;
+        z-index: 9999999;
+        background: #fff;
+        width: 600px;
+        top: 50%;
+        padding: 20px;
+        border-radius: 3px;
+        box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);
+        border-top: 8px solid #2792bf;
+        left: 50%;
+        transform: translate(-50%,-50%);
+    }
+    .popup_close{
+        position: absolute;
+        right: 5px;
+        top: 0px;
+    }
+    .popup_back{
+        position:absolute;
+        width:100%;
+        height:100%;
+        background: rgba(0, 0, 0, 0.3);
+        z-index:9999999;
+        opacity:1;
+    }
+    .popup_content
+    {
+        margin-bottom:20px;
+    }
+</style>
+
+<div class="alert alert-danger" id="answer" style="display:none">
+    <p>Incomming Call</p>
+    <p style="line-height: 0px;"><span id="callerName"></span></p>
+    <button class="actionButton" onclick="answer()">Answer</button>
+</div>
+
+<div class="alert alert-danger" id="calling" style="display:none">
+    <p>Calling</p>
+    <p style="line-height: 0px;"><span id="otherUserNameCA"></span></p>
+</div>
+
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-lg-12">
+            <div class="card chat-app">
+                <div id="plist" class="people-list">
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab" aria-controls="friends" aria-selected="true" style="padding: 0.5rem 1.5rem;">Friends</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab" aria-controls="requests" aria-selected="false" style="padding: 0.5rem 1.4rem;">Requests</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab" aria-controls="search" aria-selected="false" style="padding: 0.5rem 1.5rem;">Search</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="friends" role="tabpanel" aria-labelledby="friends-tab">
+                            <div class="input-group">
+                                <div class="input-group-prepend" onClick="onSearch(this)">
+                                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Search...">
+                            </div>
+                            <ul class="list-unstyled chat-list mt-2 mb-0" id="ajax_friends">
+                                
+                            </ul>
+                        </div>
+                        <div class="tab-pane" id="requests" role="tabpanel" aria-labelledby="requests-tab">
+                            <div class="input-group">
+                                <div class="input-group-prepend" onClick="onSearch(this)">
+                                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Search...">
+                            </div>
+                            <ul class="list-unstyled chat-list mt-2 mb-0" id="ajax_friends_requests">
+                                
+                            </ul>
+                        </div>
+                        <div class="tab-pane" id="search" role="tabpanel" aria-labelledby="search-tab">
+                            <div class="input-group">
+                                <div class="input-group-prepend" onClick="onSearch(this)">
+                                    <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Search...">
+                            </div>
+                            <ul class="list-unstyled chat-list mt-2 mb-0" id="ajax_friends_search">
+                                
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat">
+                    <div class="chat-header clearfix">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h3>Welcome to Chat!</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="view_detail_popup" style="display:none">
+    <div class="popup_back"></div>
+    <div class="popup_detail" >
+        <a href="javascript:void(0)" class="popup_close"><button type="button" class="close" aria-label="Close"><i class="fa fa-close"></i></button></a>
+        <div class="popup_content">
+            <div id="userName">
+                <input type="hidden" value="<%= roomId %>" id="logindid">
+            </div>
+            
+            <div id="userInfo" style="display:none">
+                <h1>Hello, <span id="nameHere"></span></h1>
+            </div>
+            
+            <div id="call" style="display:none">
+                <button class="dialActionButton" onclick="call()">Call</button>
+            </div>
+            
+            <div id="inCall" style="display:none">
+                <h3>On Call With</h3>
+                <h2 style="line-height: 0px;"><span id="otherUserNameC"></span></h2>
+            </div>
+            
+            <div id="videos" style="display:none">
+                <video width="100px" id="localVideo" autoplay muted playsinline></video>
+                <video style="width: 500px;" id="remoteVideo" autoplay playsinline></video>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/script.js"></script>
+<script>
+showFriends();
+showFriendsRequests();
+</script>
+<%- include('./includes/footer.ejs'); %>
